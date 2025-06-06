@@ -1,0 +1,17 @@
+[package]
+name = "jni-sp-util"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [
+    "macro"
+]
+
+
+[dependencies]
+jni = "0.21.1"
+jni-macro = { version = "0.1.0", path = "macro" }
+anyhow = "1.0.98"
+replace_with = "0.1.7"
+mini-moka = "0.10.3"
