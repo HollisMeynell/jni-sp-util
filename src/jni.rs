@@ -34,6 +34,10 @@ pub struct SpStaticField {
 }
 
 impl SpStaticField {
+    pub fn contains_cache(key: StaticFieldKey) -> bool {
+        STATIC_FIELD_CACHE.contains_key(&key)
+    }
+    
     pub fn new(key: StaticFieldKey, name: &str, return_type: &SpType) -> Self {
         Self {
             cache: key,
@@ -73,6 +77,10 @@ pub struct SpField {
 }
 
 impl SpField {
+    pub fn contains_cache(key: FieldKey) -> bool {
+        FIELD_CACHE.contains_key(&key)
+    }
+    
     pub fn new(key: FieldKey, name: &str, return_type: &SpType) -> Self {
         Self {
             cache: key,
@@ -112,6 +120,10 @@ pub struct SpStaticMethod {
 }
 
 impl SpStaticMethod {
+    pub fn contains_cache(key: StaticMethodKey) -> bool {
+        STATIC_METHOD_CACHE.contains_key(&key)
+    }
+
     pub fn new(key: StaticMethodKey, name: &str, return_type: &SpType, args: &[SpType]) -> Self {
         let mut all_len = return_type.get_str_len() + 2;
         for n in args {
@@ -166,6 +178,10 @@ pub struct SpMethod {
 }
 
 impl SpMethod {
+    pub fn contains_cache(key: MethodKey) -> bool {
+        METHOD_CACHE.contains_key(&key)
+    }
+
     pub fn new(key: MethodKey, name: &str, return_type: &SpType, args: &[SpType]) -> Self {
         let mut all_len = return_type.get_str_len() + 2;
         for n in args {
@@ -285,6 +301,10 @@ pub struct SpClass {
 }
 
 impl SpClass {
+    pub fn contains_cache(key: ClassKey) -> bool {
+        CLASS_CACHE.contains_key(&key)
+    }
+
     pub fn from_sig(sig: &str) -> Self {
         let path = sig.replace(".", "/");
         Self {
