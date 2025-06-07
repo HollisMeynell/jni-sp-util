@@ -1,8 +1,14 @@
 use anyhow::Ok;
 use jni::{
-    objects::{GlobalRef, JClass, JFieldID, JMethodID, JObject, JStaticFieldID, JStaticMethodID, JValueGen}, signature::{JavaType, ReturnType}, sys::{jfieldID, jmethodID, jvalue}, JNIEnv
+    JNIEnv,
+    objects::{
+        GlobalRef, JClass, JFieldID, JMethodID, JObject, JStaticFieldID, JStaticMethodID, JValueGen,
+    },
+    signature::{JavaType, ReturnType},
+    sys::{jfieldID, jmethodID, jvalue},
 };
 use mini_moka::sync::Cache;
+use std::fmt::Display;
 use std::sync::LazyLock;
 
 use crate::{error::Result, throw};
@@ -40,9 +46,7 @@ impl SpStaticField {
         if STATIC_FIELD_CACHE.contains_key(&self.cache) {
             return Ok(());
         }
-        let raw_id = env
-            .get_field_id(jclass, &self.name, &self.sig)?
-            .into_raw();
+        let raw_id = env.get_field_id(jclass, &self.name, &self.sig)?.into_raw();
         STATIC_FIELD_CACHE.insert(self.cache, raw_id as usize);
         Ok(())
     }
@@ -81,9 +85,7 @@ impl SpField {
         if FIELD_CACHE.contains_key(&self.cache) {
             return Ok(());
         }
-        let raw_id = env
-            .get_field_id(jclass, &self.name, &self.sig)?
-            .into_raw();
+        let raw_id = env.get_field_id(jclass, &self.name, &self.sig)?.into_raw();
         FIELD_CACHE.insert(self.cache, raw_id as usize);
         Ok(())
     }
@@ -251,26 +253,27 @@ impl Default for SpType {
     }
 }
 
-impl ToString for SpType {
-    fn to_string(&self) -> String {
+impl Display for SpType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Byte => "B".to_string(),
-            Self::Char => "C".to_string(),
-            Self::Double => "D".to_string(),
-            Self::Float => "F".to_string(),
-            Self::Int => "I".to_string(),
-            Self::Long => "L".to_string(),
-            Self::Sort => "S".to_string(),
-            Self::Boolean => "Z".to_string(),
-            Self::Void => "V".to_string(),
-            Self::Class(class) => format!(
+            Self::Byte => f.write_str("B"),
+            Self::Char => f.write_str("C"),
+            Self::Double => f.write_str("D"),
+            Self::Float => f.write_str("F"),
+            Self::Int => f.write_str("I"),
+            Self::Long => f.write_str("L"),
+            Self::Sort => f.write_str("S"),
+            Self::Boolean => f.write_str("Z"),
+            Self::Void => f.write_str("V"),
+            Self::Class(class) => write!(
+                f,
                 "L{};",
                 class
                     .class_full_path
                     .as_deref()
                     .unwrap_or("java/lang/Object")
             ),
-            Self::Array(t) => format!("[{}", t.to_string()),
+            Self::Array(t) => write!(f, "[{}", t.to_string()),
         }
     }
 }

@@ -6,11 +6,16 @@ pub type Point = usize;
 
 pub trait ToJavaPoint {
     fn to_point(self) -> jlong;
+    fn from_java_long(long: jlong) -> Self;
 }
 
 impl ToJavaPoint for Point {
     fn to_point(self) -> jlong {
         self as jlong
+    }
+
+    fn from_java_long(long: jlong) -> Self {
+        long as Self
     }
 }
 
