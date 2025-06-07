@@ -3,11 +3,13 @@ name = "jni-sp-util"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+proc-macro = true
+
 [workspace]
 members = [
     "macro"
 ]
-
 
 [dependencies]
 jni = "0.21.1"
