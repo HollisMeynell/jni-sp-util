@@ -185,21 +185,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "jni-macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "jni-sp-util"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "jni",
- "jni-macro",
  "mini-moka",
  "replace_with",
 ]
