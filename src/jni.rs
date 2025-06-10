@@ -368,6 +368,12 @@ impl SpClass {
     }
 }
 
+/// example:
+/// - class: `class: env, key, "java.lang.Object"`
+/// - static_field: `static_field: env, key, &JClass, "name", &SpType`
+/// - field: `field: env, key, &JClass, "name", &SpType`
+/// - static_method: `static_method: env, key, &JClass, "name", &SpType, &[SpType] `
+/// - method: `method: env, key, &JClass, "name", &SpType, &[SpType] `
 #[macro_export]
 macro_rules! get_sp_struct {
     (class: $env:expr, $key:expr, $sig:expr) => {
@@ -386,7 +392,7 @@ macro_rules! get_sp_struct {
             }
         }
     };
-    (static_field: $env:ident, $key:expr, $name:expr, $class:expr, $t:expr) => {
+    (static_field: $env:ident, $key:expr, $class:expr, $name:expr, $t:expr) => {
         if SpStaticField::contains_cache($key) {
             let field = SpStaticField {
                 cache: $key,
@@ -402,7 +408,7 @@ macro_rules! get_sp_struct {
             }
         }
     };
-    (field: $env:ident, $key:expr, $name:expr, $class:expr, $t:expr) => {
+    (field: $env:ident, $key:expr, $class:expr, $name:expr, $t:expr) => {
         if SpField::contains_cache($key) {
             let field = SpField {
                 cache: $key,
