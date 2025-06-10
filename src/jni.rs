@@ -1,4 +1,3 @@
-use anyhow::Ok;
 use jni::{
     JNIEnv,
     objects::{
@@ -29,20 +28,20 @@ pub static STATIC_METHOD_CACHE: LazyLock<Cache<StaticMethodKey, usize>> =
 
 pub struct SpStaticField {
     cache: StaticFieldKey,
-    name: String,
-    sig: String,
+    name: Option<String>,
+    ret: Option<String>,
 }
 
 impl SpStaticField {
     pub fn contains_cache(key: StaticFieldKey) -> bool {
         STATIC_FIELD_CACHE.contains_key(&key)
     }
-    
+
     pub fn new(key: StaticFieldKey, name: &str, return_type: &SpType) -> Self {
         Self {
             cache: key,
-            name: name.to_string(),
-            sig: return_type.to_string(),
+            name: Some(name.to_string()),
+            ret: Some(return_type.to_string()),
         }
     }
 
@@ -50,7 +49,10 @@ impl SpStaticField {
         if STATIC_FIELD_CACHE.contains_key(&self.cache) {
             return Ok(());
         }
-        let raw_id = env.get_field_id(jclass, &self.name, &self.sig)?.into_raw();
+        let raw_id = match (&self.name, &self.ret) {
+            (Some(name), Some(sig)) => env.get_static_field_id(jclass, name, sig)?.into_raw(),
+            _ => return throw("init static field error: name or return type is null"),
+        };
         STATIC_FIELD_CACHE.insert(self.cache, raw_id as usize);
         Ok(())
     }
@@ -72,20 +74,20 @@ impl SpStaticField {
 
 pub struct SpField {
     cache: FieldKey,
-    name: String,
-    sig: String,
+    name: Option<String>,
+    ret: Option<String>,
 }
 
 impl SpField {
     pub fn contains_cache(key: FieldKey) -> bool {
         FIELD_CACHE.contains_key(&key)
     }
-    
+
     pub fn new(key: FieldKey, name: &str, return_type: &SpType) -> Self {
         Self {
             cache: key,
-            name: name.to_string(),
-            sig: return_type.to_string(),
+            name: Some(name.to_string()),
+            ret: Some(return_type.to_string()),
         }
     }
 
@@ -93,7 +95,10 @@ impl SpField {
         if FIELD_CACHE.contains_key(&self.cache) {
             return Ok(());
         }
-        let raw_id = env.get_field_id(jclass, &self.name, &self.sig)?.into_raw();
+        let raw_id = match (&self.name, &self.ret) {
+            (Some(name), Some(sig)) => env.get_field_id(jclass, name, sig)?.into_raw(),
+            _ => return throw("init field error: name or return type is null"),
+        };
         FIELD_CACHE.insert(self.cache, raw_id as usize);
         Ok(())
     }
@@ -115,8 +120,8 @@ impl SpField {
 
 pub struct SpStaticMethod {
     cache: StaticMethodKey,
-    name: String,
-    sig: String,
+    name: Option<String>,
+    sig: Option<String>,
 }
 
 impl SpStaticMethod {
@@ -139,8 +144,8 @@ impl SpStaticMethod {
 
         Self {
             cache: key,
-            name: name.to_string(),
-            sig: sig_builder,
+            name: Some(name.to_string()),
+            sig: Some(sig_builder),
         }
     }
 
@@ -148,9 +153,10 @@ impl SpStaticMethod {
         if STATIC_METHOD_CACHE.contains_key(&self.cache) {
             return Ok(());
         }
-        let raw_id = env
-            .get_static_method_id(jclass, &self.name, &self.sig)?
-            .into_raw();
+        let raw_id = match (&self.name, &self.sig) {
+            (Some(name), Some(sig)) => env.get_static_method_id(jclass, name, sig)?.into_raw(),
+            _ => return throw("init static method error: name or sig is null"),
+        };
         STATIC_METHOD_CACHE.insert(self.cache, raw_id as usize);
         Ok(())
     }
@@ -173,8 +179,8 @@ impl SpStaticMethod {
 
 pub struct SpMethod {
     cache: MethodKey,
-    name: String,
-    sig: String,
+    name: Option<String>,
+    sig: Option<String>,
 }
 
 impl SpMethod {
@@ -197,8 +203,8 @@ impl SpMethod {
 
         Self {
             cache: key,
-            name: name.to_string(),
-            sig: sig_builder,
+            name: Some(name.to_string()),
+            sig: Some(sig_builder),
         }
     }
 
@@ -206,7 +212,10 @@ impl SpMethod {
         if METHOD_CACHE.contains_key(&self.cache) {
             return Ok(());
         }
-        let raw_id = env.get_method_id(jclass, &self.name, &self.sig)?.into_raw();
+        let raw_id = match (&self.name, &self.sig) {
+            (Some(name), Some(sig)) => env.get_method_id(jclass, name, sig)?.into_raw(),
+            _ => return throw("init static method error: name or sig is null"),
+        };
         METHOD_CACHE.insert(self.cache, raw_id as usize);
         Ok(())
     }
@@ -330,7 +339,7 @@ impl SpClass {
             if self.class_full_path.is_none() {
                 return throw("no class");
             }
-        } else if CLASS_CACHE.contains_key(&self.cache) {
+        } else if self.jni_class_ref.is_some() {
             return Ok(());
         }
 
@@ -357,4 +366,88 @@ impl SpClass {
             None => throw("class not init"),
         }
     }
+}
+
+#[macro_export]
+macro_rules! get_sp_struct {
+    (class: $env:expr, $key:expr, $sig:expr) => {
+        if SpClass::contains_cache($key) {
+            let class = SpClass {
+                cache: $key,
+                class_full_path: None,
+                jni_class_ref: None,
+            };
+            Ok(class)
+        } else {
+            let mut class = SpClass::new($key, $sig);
+            match class.init($env) {
+                Ok(_) => Ok(class),
+                Err(e) => Err(e),
+            }
+        }
+    };
+    (static_field: $env:ident, $key:expr, $name:expr, $class:expr, $t:expr) => {
+        if SpStaticField::contains_cache($key) {
+            let field = SpStaticField {
+                cache: $key,
+                name: None,
+                ret: None,
+            };
+            Ok(field)
+        } else {
+            let field = SpStaticField::new($key, $name, $t);
+            match field.init($env, $class) {
+                Ok(_) => Ok(field),
+                Err(e) => Err(e),
+            }
+        }
+    };
+    (field: $env:ident, $key:expr, $name:expr, $class:expr, $t:expr) => {
+        if SpField::contains_cache($key) {
+            let field = SpField {
+                cache: $key,
+                name: None,
+                ret: None,
+            };
+            Ok(field)
+        } else {
+            let field = SpField::new($key, $name, $t);
+            match field.init($env, $class) {
+                Ok(_) => Ok(field),
+                Err(e) => Err(e),
+            }
+        }
+    };
+    (static_method: $env:ident, $key:expr, $class:expr, $name:expr, $ret:expr, $args:expr) => {
+        if SpStaticMethod::contains_cache($key) {
+            let method = SpStaticMethod {
+                cache: $key,
+                name: None,
+                sig: None,
+            };
+            Ok(method)
+        } else {
+            let method = SpStaticMethod::new($key, $name, $ret, $args);
+            match method.init($env, $class) {
+                Ok(_) => Ok(method),
+                Err(e) => Err(e),
+            }
+        }
+    };
+    (method: $env:ident, $key:expr, $class:expr, $name:expr, $ret:expr, $args:expr) => {
+        if SpMethod::contains_cache($key) {
+            let method = SpMethod {
+                cache: $key,
+                name: None,
+                sig: None,
+            };
+            Ok(method)
+        } else {
+            let method = SpMethod::new($key, $name, $ret, $args);
+            match method.init($env, $class) {
+                Ok(_) => Ok(method),
+                Err(e) => Err(e),
+            }
+        }
+    };
 }
