@@ -37,6 +37,13 @@ impl SpStaticField {
         STATIC_FIELD_CACHE.contains_key(&key)
     }
 
+    pub fn cache(key: StaticFieldKey) -> Self {
+        Self {
+            cache: key,
+            name: None,
+            ret: None,
+        }
+    }
     pub fn new(key: StaticFieldKey, name: &str, return_type: &SpType) -> Self {
         Self {
             cache: key,
@@ -83,6 +90,14 @@ impl SpField {
         FIELD_CACHE.contains_key(&key)
     }
 
+    pub fn cache(key: FieldKey) -> Self {
+        Self {
+            cache: key,
+            name: None,
+            ret: None,
+        }
+    }
+
     pub fn new(key: FieldKey, name: &str, return_type: &SpType) -> Self {
         Self {
             cache: key,
@@ -127,6 +142,14 @@ pub struct SpStaticMethod {
 impl SpStaticMethod {
     pub fn contains_cache(key: StaticMethodKey) -> bool {
         STATIC_METHOD_CACHE.contains_key(&key)
+    }
+
+    pub fn cache(key: StaticMethodKey) -> Self {
+        Self {
+            cache: key,
+            name: None,
+            sig: None,
+        }
     }
 
     pub fn new(key: StaticMethodKey, name: &str, return_type: &SpType, args: &[SpType]) -> Self {
@@ -188,6 +211,13 @@ impl SpMethod {
         METHOD_CACHE.contains_key(&key)
     }
 
+    pub fn cache(key: MethodKey) -> Self {
+        Self {
+            cache: key,
+            name: None,
+            sig: None,
+        }
+    }
     pub fn new(key: MethodKey, name: &str, return_type: &SpType, args: &[SpType]) -> Self {
         let mut all_len = return_type.get_str_len() + 2;
         for n in args {
@@ -322,6 +352,14 @@ impl SpClass {
             jni_class_ref: None,
         }
     }
+
+    pub fn cache(key: ClassKey) -> Self {
+        Self {
+            cache: key,
+            class_full_path: None,
+            jni_class_ref: None,
+        }
+    }
     pub fn new(key: ClassKey, sig: &str) -> Self {
         let path = sig.replace(".", "/");
         Self {
@@ -378,11 +416,7 @@ impl SpClass {
 macro_rules! get_sp_struct {
     (class: $env:expr, $key:expr, $sig:expr) => {
         if SpClass::contains_cache($key) {
-            let class = SpClass {
-                cache: $key,
-                class_full_path: None,
-                jni_class_ref: None,
-            };
+            let class = SpClass::cache($key);
             Ok(class)
         } else {
             let mut class = SpClass::new($key, $sig);
@@ -394,11 +428,7 @@ macro_rules! get_sp_struct {
     };
     (static_field: $env:ident, $key:expr, $class:expr, $name:expr, $t:expr) => {
         if SpStaticField::contains_cache($key) {
-            let field = SpStaticField {
-                cache: $key,
-                name: None,
-                ret: None,
-            };
+            let field = SpStaticField::cache($key);
             Ok(field)
         } else {
             let field = SpStaticField::new($key, $name, $t);
@@ -410,11 +440,7 @@ macro_rules! get_sp_struct {
     };
     (field: $env:ident, $key:expr, $class:expr, $name:expr, $t:expr) => {
         if SpField::contains_cache($key) {
-            let field = SpField {
-                cache: $key,
-                name: None,
-                ret: None,
-            };
+            let field = SpField::cache($key);
             Ok(field)
         } else {
             let field = SpField::new($key, $name, $t);
@@ -426,11 +452,7 @@ macro_rules! get_sp_struct {
     };
     (static_method: $env:ident, $key:expr, $class:expr, $name:expr, $ret:expr, $args:expr) => {
         if SpStaticMethod::contains_cache($key) {
-            let method = SpStaticMethod {
-                cache: $key,
-                name: None,
-                sig: None,
-            };
+            let method = SpStaticMethod::cache($key);
             Ok(method)
         } else {
             let method = SpStaticMethod::new($key, $name, $ret, $args);
@@ -442,11 +464,7 @@ macro_rules! get_sp_struct {
     };
     (method: $env:ident, $key:expr, $class:expr, $name:expr, $ret:expr, $args:expr) => {
         if SpMethod::contains_cache($key) {
-            let method = SpMethod {
-                cache: $key,
-                name: None,
-                sig: None,
-            };
+            let method = SpMethod::cache($key);
             Ok(method)
         } else {
             let method = SpMethod::new($key, $name, $ret, $args);
